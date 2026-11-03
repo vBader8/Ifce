@@ -4,7 +4,7 @@ import { RiskMatrixLab, riskMatrixMeta, RiskTransferLab, riskTransferMeta, Pooli
 import { InsurabilityLab, insurabilityMeta, ReinsuranceLab, reinsuranceMeta, IndemnityLab, indemnityMeta, AverageLab, averageMeta, ContributionLab, contributionMeta, SubrogationLab, subrogationMeta } from './PrincipleLabs';
 import { ProximateCauseLab, proximateMeta, ContractLab, contractMeta, RegulationMapLab, regulationMeta } from './ScenarioLabs';
 import { makeClassifierLab, type ClassifierData } from './ClassifierLab';
-import { benefitsData, indemnityModsData, interestData, riskCategoriesData, riskComponentsData, subrogationCasesData } from './classifierData';
+import { benefitsData, distributionData, indemnityModsData, insurerTypesData, interestData, marketRolesData, riskCategoriesData, riskComponentsData, subrogationCasesData, techData } from './classifierData';
 
 export interface LabEntry {
   meta: LabMeta;
@@ -35,4 +35,8 @@ export const LABS: Record<string, LabEntry> = {
   'classify-subrogation': cls(subrogationCasesData),
   'classify-indemnity-mods': cls(indemnityModsData),
   'classify-insurable-interest': cls(interestData),
+  'classify-market-roles': cls(marketRolesData),
+  'classify-insurer-types': cls(insurerTypesData),
+  'classify-distribution': cls(distributionData),
+  'classify-tech': cls(techData),
 };
