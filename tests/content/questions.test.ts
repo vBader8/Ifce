@@ -1,4 +1,4 @@
-import { ALL_QUESTIONS, chapters, examPool, getLesson, questionsFor, readyLessonOrder, studyableLessons } from '../../src/content';
+import { ALL_QUESTIONS, chapters, examPool, getLesson, questionsFor, readyLessonOrder, search, studyableLessons } from '../../src/content';
 import { LABS } from '../../src/labs/registry';
 import { CONCEPT_LABELS } from '../../src/content/concepts';
 
@@ -93,5 +93,19 @@ describe('lessons', () => {
       expect(l.meta.variables.length).toBeGreaterThan(0);
       expect(l.meta.mistake.correction.length).toBeGreaterThan(5);
     }
+  });
+});
+
+
+describe('concept search', () => {
+  it('finds lessons and terms in Arabic regardless of hamza/taa marbuta forms', () => {
+    expect(search('النسبيه').some((r) => r.lessonId === 'c7-l5')).toBe(true);
+    expect(search('اعادة التامين').some((r) => r.lessonId === 'c2-l3')).toBe(true);
+  });
+  it('finds English terms', () => {
+    expect(search('Subrogation').some((r) => r.lessonId?.startsWith('c8'))).toBe(true);
+  });
+  it('ignores very short queries', () => {
+    expect(search('ا')).toEqual([]);
   });
 });
