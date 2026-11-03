@@ -1,0 +1,11 @@
+{
+  "name": "IFCE Living Book — أكاديمية أساسيات التأمين",
+  "short_name": "IFCE Living Book",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1b2e",
+  "theme_color": "#0d1b2e",
+  "icons": []
+}
