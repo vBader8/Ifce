@@ -345,7 +345,7 @@ export function AssessPage({ lesson }: { lesson: Lesson }) {
               <h3>{k.title}</h3>
               <p>{k.desc}</p>
               <p className="small">
-                <bdi dir="ltr">{n}</bdi> سؤالًا · محاولات: <bdi dir="ltr">{tries}</bdi> · أفضل نتيجة:{' '}
+                <bdi dir="ltr">{n}</bdi> سؤالًا · الإتقان يتطلب <bdi dir="ltr">{Math.ceil((th / 100) * n)}</bdi> إجابة صحيحة · محاولات: <bdi dir="ltr">{tries}</bdi> · أفضل نتيجة:{' '}
                 <strong className={best !== undefined && best >= th ? 'good' : ''}>{best !== undefined ? <bdi dir="ltr">{best}%</bdi> : '—'}</strong>
               </p>
             </div>
