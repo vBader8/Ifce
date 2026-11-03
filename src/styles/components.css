@@ -156,7 +156,8 @@
    Labs
    ===================================================================== */
 .lab { display: grid; gap: 12px; }
-.lab-head h3 { margin: 0; font-size: 1.25rem; color: var(--navy-700); }
+.lab-head .lab-title { margin: 0; font-size: 1.25rem; color: var(--navy-700); }
+.h4 { font-size: 1rem; }
 .lab-kicker { font-size: 0.75rem; letter-spacing: 0.5px; color: #8a6d2f; font-weight: 700; }
 .lab-objective { font-size: 0.92rem; margin: 4px 0 0; }
 .predict { background: linear-gradient(135deg, #eef5ff, #fdf8ea); border: 1px solid #c9daf3; border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 18px rgba(29, 79, 145, 0.12); }
@@ -187,9 +188,9 @@
 .lab-page .lab-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .lab-controls, .lab-results { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 16px rgba(60, 40, 10, 0.08); min-width: 0; }
 .lab-interpret { background: var(--surface-2); border-radius: 12px; padding: 8px 12px; }
-.lab-interpret h4 { margin: 0; }
+.lab-interpret h3 { margin: 0; }
 .mistake-card { display: grid; gap: 4px; font-size: 0.92rem; border: 1px dashed var(--bad); border-radius: 12px; padding: 8px 12px; }
-.lab-foot { display: flex; justify-content: flex-end; }
+.lab-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
 .vars { margin: 0; display: grid; gap: 6px; }
 .vars dt { font-weight: 700; }
 .vars dd { margin: 0; font-size: 0.9rem; }
@@ -469,3 +470,5 @@ a.lesson-row:hover { background: var(--surface-2); }
 /* teacher presentation mode */
 .app.teacher .page-inner { padding: 30px 40px; }
 @media print { .topbar, .book-nav, .book-toolbar { display: none; } }
+
+.review-flag { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; margin: 8px 0 0; }

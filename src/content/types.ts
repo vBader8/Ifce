@@ -110,6 +110,8 @@ export interface Question {
   /** Why each option is right/wrong – same order as `options`. */
   optionNotes: [string, string, string, string];
   examArea: ExamArea;
+  /** Set (from the review log) when the question depends on a point awaiting expert review. Excluded from the exam pool. */
+  needsReview?: string;
 }
 
 export interface ReviewLogEntry {

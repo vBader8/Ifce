@@ -390,7 +390,7 @@ export function RegulationMapLab({ onComplete }: LabProps) {
       }
       results={
         <div className="regdetail">
-          <h4>{node.label}</h4>
+          <h3 className="h4">{node.label}</h3>
           <span className={`badge verif-badge-${node.verif}`}>{VERIF_LABEL[node.verif]}</span>
           <p>{node.text}</p>
           <p className="small">

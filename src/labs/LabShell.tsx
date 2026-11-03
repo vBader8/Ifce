@@ -35,16 +35,19 @@ export function LabShell({
 }) {
   const [pick, setPick] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [resetNote, setResetNote] = useState(false);
   const reset = () => {
     setPick(null);
     setRevealed(false);
     onReset();
+    setResetNote(true);
+    window.setTimeout(() => setResetNote(false), 2200);
   };
   return (
     <section className="lab" aria-label={meta.title} data-lab={meta.id}>
       <header className="lab-head popup">
         <span className="lab-kicker">مختبر تفاعلي</span>
-        <h3>{meta.title}</h3>
+        <h2 className="lab-title">{meta.title}</h2>
         <p className="lab-objective">
           <strong>الهدف التعليمي: </strong>
           {meta.objective}
@@ -102,7 +105,7 @@ export function LabShell({
         </dl>
         {meta.rules && (
           <>
-            <h4>قواعد هذا المثال</h4>
+            <h3 className="h4">قواعد هذا المثال</h3>
             <ul className="rules">
               {meta.rules.map((r) => (
                 <li key={r}>{r}</li>
@@ -122,7 +125,7 @@ export function LabShell({
       </div>
 
       <div className="lab-interpret popup" style={{ animationDelay: '260ms' }}>
-        <h4>تفسير النتائج</h4>
+        <h3 className="h4">تفسير النتائج</h3>
         {interpretation}
       </div>
 
@@ -136,6 +139,9 @@ export function LabShell({
       </div>
 
       <div className="lab-foot">
+        <span className="small muted" role="status" aria-live="polite">
+          {resetNote ? 'أُعيدت القيم الافتراضية وسؤال التوقع.' : ''}
+        </span>
         <button type="button" className="btn btn-ghost" onClick={reset} data-nodrag>
           ↺ إعادة التجربة
         </button>

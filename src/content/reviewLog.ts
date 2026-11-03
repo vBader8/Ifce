@@ -75,3 +75,15 @@ export const REVIEW_LOG: ReviewLogEntry[] = [
     status: 'open',
   },
 ];
+
+/** Individual questions whose keyed answer depends on an open review item. They stay in lesson practice with a visible
+ * warning but are excluded from the exam simulation until reviewed. The question text itself is not changed. */
+export const QUESTIONS_UNDER_REVIEW: Record<string, string> = {
+  'c6-l1-m6': 'قاعدة «خطر مؤمَّن منه يليه خطر مستثنى» قاعدة تعليمية عامة لم تُطابق بعد مع المنهج والنظام السعودي.',
+};
+
+/** Review notes attached to lessons whose status remains `complete` but contain specific points awaiting review. */
+export const LESSON_REVIEW_NOTES: Record<string, string[]> = {
+  'c6-l1': ['قواعد تسلسل الأخطار المؤمَّن منها والمستثناة (الفقرة الأخيرة من الشرح ومختبر السبب المباشر) قواعد تعليمية عامة بانتظار مطابقتها مع المنهج والنظام السعودي.'],
+  'c8-l4': ['قاعدة توزيع الاسترداد الجزئي المستخدمة في المختبر قاعدة مثال مبسطة معلنة، وليست حكمًا نظاميًا.'],
+};

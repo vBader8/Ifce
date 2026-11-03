@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import type { ContentStatus } from '../../content/types';
 import { fmt } from '../../engine/calc';
 
@@ -157,10 +157,49 @@ export function Disclosure({ title, children, defaultOpen = false, className = '
   );
 }
 
+/** Traps Tab focus inside `ref`, closes on Escape, and restores focus to the opener when unmounted. */
+export function useDialogFocus(ref: RefObject<HTMLElement | null>, onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    const el = ref.current;
+    if (el && !el.contains(document.activeElement)) {
+      (el.querySelector<HTMLElement>('[autofocus], button, [href], input, select, textarea') ?? el).focus();
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close.current();
+        return;
+      }
+      if (e.key !== 'Tab' || !ref.current) return;
+      const items = [...ref.current.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])')];
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      opener?.focus?.();
+    };
+  }, [ref]);
+}
+
 export function Modal({ title, children, onClose, actions }: { title: string; children: ReactNode; onClose: () => void; actions?: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, onClose);
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === 'Escape' && onClose()}>
+      <div ref={ref} className="modal" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <h2>{title}</h2>
         <div className="modal-body">{children}</div>
         <div className="modal-actions">{actions ?? <button className="btn" onClick={onClose} autoFocus>إغلاق</button>}</div>
@@ -175,7 +214,7 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
       <div className="empty-icon" aria-hidden>
         ❖
       </div>
-      <h3>{title}</h3>
+      <h2>{title}</h2>
       {children}
     </div>
   );

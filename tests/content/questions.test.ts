@@ -3,6 +3,12 @@ import { LABS } from '../../src/labs/registry';
 import { CONCEPT_LABELS } from '../../src/content/concepts';
 
 describe('question bank integrity', () => {
+  it('has no duplicated question stems', () => {
+    const stems = ALL_QUESTIONS.map((q) => q.stem.trim());
+    const dups = stems.filter((s, i) => stems.indexOf(s) !== i);
+    expect(dups).toEqual([]);
+  });
+
   it('has unique ids', () => {
     const ids = ALL_QUESTIONS.map((q) => q.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -82,8 +88,10 @@ describe('lessons', () => {
     expect(chapters.map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
-  it('exam pool contains only questions from complete lessons', () => {
+  it('exam pool contains only questions from complete lessons and none under review', () => {
     expect(examPool.every((q) => getLesson(q.lessonId)?.status === 'complete')).toBe(true);
+    expect(examPool.some((q) => q.needsReview)).toBe(false);
+    expect(ALL_QUESTIONS.find((q) => q.id === 'c6-l1-m6')?.needsReview).toBeTruthy();
   });
 
   it('every lab has a predict question with a valid answer', () => {

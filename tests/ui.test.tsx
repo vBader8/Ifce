@@ -5,6 +5,7 @@ import { initialState, STORAGE_KEY, loadState } from '../src/engine/progress';
 import { AverageLab } from '../src/labs/PrincipleLabs';
 import { PoolingLab } from '../src/labs/RiskLabs';
 import { questionsFor } from '../src/content';
+import { LABS } from '../src/labs/registry';
 
 function reducedState() {
   const s = initialState();
@@ -35,7 +36,7 @@ describe('navigation', () => {
 
   it('opens the book and turns pages with buttons and the keyboard (RTL arrows)', () => {
     renderApp('#/book/c1-l1');
-    expect(screen.getByRole('heading', { level: 1, name: 'دور الخطر في التأمين' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'دور الخطر في التأمين' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الصفحة التالية' }));
     expect(screen.getByRole('heading', { name: 'الشرح' })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
@@ -88,7 +89,7 @@ describe('labs', () => {
     fireEvent.click(within(group).getByRole('radio', { name: 'ينخفض بوضوح' }));
     fireEvent.click(screen.getByRole('button', { name: 'اكشف الإجابة' }));
     expect(done).toHaveBeenCalled();
-    expect(screen.getByRole('status')).toHaveTextContent('توقع صحيح');
+    expect(screen.getAllByRole('status').some((s) => s.textContent?.includes('توقع صحيح'))).toBe(true);
   });
 
   it('number inputs clamp to their range', () => {
@@ -127,5 +128,50 @@ describe('quiz flow and persistence', () => {
     fireEvent.click(screen.getByRole('button', { name: 'إنهاء وتسليم' }));
     const dialog = screen.getByRole('dialog', { name: 'تأكيد التسليم' });
     expect(within(dialog).getByText(/دون إجابة/)).toBeInTheDocument();
+  });
+});
+
+describe('every lab resets to its defaults', () => {
+  it.each(Object.keys(LABS))('%s', (id) => {
+    const C = LABS[id].Component;
+    const { container, unmount } = render(<C />);
+    const results = () => container.querySelector('.lab-results')!.textContent;
+    const controls = () => [...container.querySelectorAll<HTMLInputElement>('.lab-controls input')].map((i) => (i.type === 'checkbox' ? String(i.checked) : i.value)).join('|');
+    const initialResults = results();
+    const initialControls = controls();
+    // change something: a number field if any, otherwise click the first choice chip / checkbox
+    const num = container.querySelector<HTMLInputElement>('.lab-controls input[type=number]');
+    if (num) fireEvent.change(num, { target: { value: String(Number(num.min) + Number(num.step || 1)) } });
+    else {
+      const chip = container.querySelector<HTMLElement>('.lab-controls .sort-choices button, .lab-controls input[type=checkbox], .lab-controls .regnode:not(.on), .lab-controls .pc-event');
+      chip?.click();
+    }
+    fireEvent.click(screen.getByRole('button', { name: /إعادة التجربة/ }));
+    expect(controls()).toBe(initialControls);
+    expect(results()).toBe(initialResults);
+    expect(screen.getAllByRole('status').some((s) => s.textContent?.includes('أُعيدت القيم الافتراضية'))).toBe(true);
+    unmount();
+  });
+});
+
+describe('mastery gate', () => {
+  it('unlocks the next lesson only after mastery AND confirmation', async () => {
+    const s = reducedState();
+    s.lessons['c1-l1'] = { viewed: [], labsDone: [], best: { mcq: 90, scenario: 100 }, attempts: [] };
+    renderApp('#/book/c1-l1?s=4', s);
+    fireEvent.click(screen.getByRole('button', { name: /أتقنت الدرس/ }));
+    const dialog = screen.getByRole('dialog', { name: 'تأكيد الانتقال' });
+    fireEvent.click(within(dialog).getByRole('button', { name: /افتح الدرس 1.2/ }));
+    expect(await screen.findByRole('heading', { level: 2, name: 'فئات الخطر' })).toBeInTheDocument();
+    expect(screen.queryByText('🔒 هذا الدرس مقفل')).toBeNull();
+    expect(loadState().lessons['c1-l1'].advanceConfirmed).toBe(true);
+  });
+
+  it('does not offer advancing below the threshold', () => {
+    const s = reducedState();
+    s.lessons['c1-l1'] = { viewed: [], labsDone: [], best: { mcq: 100, scenario: 80 }, attempts: [] };
+    renderApp('#/book/c1-l1?s=4', s);
+    expect(screen.queryByRole('button', { name: /أتقنت الدرس/ })).toBeNull();
+    expect(screen.getByText('لم يتحقق شرط الإتقان بعد.')).toBeInTheDocument();
   });
 });

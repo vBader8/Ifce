@@ -131,6 +131,7 @@ export function LabsPage({ labId }: { labId?: string }) {
     const lesson = studyableLessons.find((l) => l.labId === labId);
     return (
       <div className="page-wrap lab-page">
+        <h1 className="sr-only">{L.meta.title}</h1>
         <Link to="/labs" className="btn btn-ghost btn-small">→ كل المختبرات</Link>
         <div className="paper-sheet popstage">
           <C />
@@ -178,7 +179,7 @@ export function QuizCenterPage() {
           <div className="scroll-x">
             <table className="tbl">
               <thead>
-                <tr><th>الدرس</th><th>الاختبار الشامل</th><th>السيناريوهات</th><th></th></tr>
+                <tr><th>الدرس</th><th>الاختبار الشامل</th><th>السيناريوهات</th><th><span className="sr-only">الإجراءات</span></th></tr>
               </thead>
               <tbody>
                 {c.lessons.filter((l) => l.status !== 'planned').map((l) => {

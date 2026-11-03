@@ -36,7 +36,8 @@
   height: clamp(520px, calc(100vh - 285px), 900px);
   height: clamp(520px, calc(100dvh - 285px), 900px);
   transform-style: preserve-3d;
-  perspective: 2600px;
+  perspective: 4200px;
+  perspective-origin: 50% 50%;
 }
 .spread {
   position: absolute;
@@ -60,11 +61,18 @@
 }
 .page-right {
   border-radius: 4px 10px 10px 4px;
-  box-shadow: inset 28px 0 34px -22px rgba(60, 40, 10, 0.35); /* spine shade on its left edge */
+  /* gutter shade near the spine + faint highlight where the paper curves up from the binding */
+  box-shadow:
+    inset 34px 0 38px -24px rgba(60, 40, 10, 0.4),
+    inset 60px 0 50px -50px rgba(255, 255, 255, 0.6),
+    inset -1px 0 0 rgba(120, 95, 50, 0.25);
 }
 .page-left {
   border-radius: 10px 4px 4px 10px;
-  box-shadow: inset -28px 0 34px -22px rgba(60, 40, 10, 0.35); /* spine shade on its right edge */
+  box-shadow:
+    inset -34px 0 38px -24px rgba(60, 40, 10, 0.4),
+    inset -60px 0 50px -50px rgba(255, 255, 255, 0.6),
+    inset 1px 0 0 rgba(120, 95, 50, 0.25);
 }
 .page-inner {
   position: absolute;
@@ -97,30 +105,60 @@
   background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(60, 40, 10, 0.28) 45%, rgba(255, 255, 255, 0.25) 50%, rgba(60, 40, 10, 0.28) 55%, rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
 }
-/* page block thickness */
+/* page block thickness: read pages pile up on the right (RTL), unread on the left */
+.book { --read: 0; }
 .stack {
   position: absolute;
-  top: 6px;
-  bottom: -6px;
-  width: 10px;
-  background: repeating-linear-gradient(90deg, #efe6cf 0 1px, #d8cba8 1px 2px);
+  top: 5px;
+  bottom: -5px;
   border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, #f3ebd6 0 1px, #dccfab 1px 2px, #efe5cc 2px 3px);
+  pointer-events: none;
 }
-.stack-left { left: -8px; transform: skewY(-1deg); box-shadow: -4px 6px 10px rgba(0, 0, 0, 0.25); }
-.stack-right { right: -8px; transform: skewY(1deg); box-shadow: 4px 6px 10px rgba(0, 0, 0, 0.25); }
+.stack-left {
+  left: calc(-1 * (4px + 10px * (1 - var(--read))));
+  width: calc(4px + 10px * (1 - var(--read)));
+  border-radius: 4px 0 0 4px;
+  box-shadow: -3px 5px 8px rgba(0, 0, 0, 0.3), inset 2px 0 2px rgba(255, 255, 255, 0.4);
+}
+.stack-right {
+  right: calc(-1 * (4px + 10px * var(--read)));
+  width: calc(4px + 10px * var(--read));
+  border-radius: 0 4px 4px 0;
+  box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.3), inset -2px 0 2px rgba(255, 255, 255, 0.4);
+}
 .book-block::after {
   /* the hard cover peeking under the pages */
   content: '';
   position: absolute;
-  inset: -10px -16px -14px;
-  background: linear-gradient(180deg, #1a2d4c, #0e1a2e);
+  inset: -12px -20px -16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 30%),
+    linear-gradient(180deg, #1c3050, #0d1a2e);
   border-radius: 12px;
-  transform: translateZ(-2px);
+  transform: translateZ(-3px);
   z-index: -1;
-  box-shadow: inset 0 0 0 2px rgba(201, 164, 92, 0.35);
+  box-shadow:
+    inset 0 0 0 2px rgba(201, 164, 92, 0.4),
+    inset 0 0 0 6px rgba(0, 0, 0, 0.15),
+    0 2px 0 #0a1424;
+}
+.book::after {
+  /* soft contact shadow on the table */
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -26px;
+  height: 40px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55), transparent 70%);
+  filter: blur(6px);
+  z-index: -2;
+  pointer-events: none;
 }
 
-/* ---------------- turning leaf ---------------- */
+/* ---------------- turning leaf (transform written per frame from JS) ---------------- */
 .leaf {
   position: absolute;
   top: 0;
@@ -129,6 +167,7 @@
   transform-style: preserve-3d;
   z-index: 5;
   will-change: transform;
+  --shade: 0;
 }
 .leaf-left { left: 0; transform-origin: right center; }
 .leaf-right { right: 0; transform-origin: left center; }
@@ -137,35 +176,42 @@
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  box-shadow: 0 0 calc(30px * var(--shade)) rgba(0, 0, 0, calc(0.35 * var(--shade)));
 }
 .leaf-face .page { height: 100%; }
 .leaf-face.back { transform: rotateY(180deg); }
 .leaf-face::after {
-  /* dynamic shading while turning */
+  /* light falls off towards the spine as the page bends; a glossy band suggests the curl */
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 40%, transparent 60%, rgba(0, 0, 0, 0.12));
-  animation: leafShade 760ms ease-in-out both;
+  opacity: var(--shade);
+  border-radius: inherit;
 }
-.turning-next { animation: turnNext 760ms cubic-bezier(0.45, 0.05, 0.25, 1) both; }
-.turning-prev { animation: turnPrev 760ms cubic-bezier(0.45, 0.05, 0.25, 1) both; }
-@keyframes turnNext {
-  0% { transform: rotateY(0deg); }
-  50% { transform: rotateY(90deg) translateZ(30px); }
-  100% { transform: rotateY(180deg); }
+.leaf-left .leaf-face.front::after,
+.leaf-right .leaf-face.back::after {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0%, rgba(255, 255, 255, 0.28) 55%, rgba(0, 0, 0, 0.3) 100%);
 }
-@keyframes turnPrev {
-  0% { transform: rotateY(0deg); }
-  50% { transform: rotateY(-90deg) translateZ(30px); }
-  100% { transform: rotateY(-180deg); }
+.leaf-left .leaf-face.back::after,
+.leaf-right .leaf-face.front::after {
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.05) 0%, rgba(255, 255, 255, 0.28) 55%, rgba(0, 0, 0, 0.3) 100%);
 }
-@keyframes leafShade {
-  0% { opacity: 0; }
-  50% { opacity: 1; }
-  100% { opacity: 0; }
+/* shadow cast by the lifting page onto the page being revealed */
+.cast {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 4;
 }
+.cast-left { left: 0; background: linear-gradient(270deg, rgba(20, 12, 0, 0.75), rgba(20, 12, 0, 0.15) 70%, transparent); }
+.cast-right { right: 0; background: linear-gradient(90deg, rgba(20, 12, 0, 0.75), rgba(20, 12, 0, 0.15) 70%, transparent); }
+.cast-full { left: 0; width: 100%; background: linear-gradient(90deg, rgba(20, 12, 0, 0.15), rgba(20, 12, 0, 0.7)); }
+.book.turning .page-inner { overflow: hidden; }
+body.is-turning { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 
 .page-ghost .ghost-title { font-size: 1.3rem; color: var(--ink); }
 .ghost-lines { display: grid; gap: 12px; margin-top: 18px; }
@@ -178,11 +224,8 @@
 .book.single .page { border-radius: 4px 10px 10px 4px; box-shadow: inset 22px 0 26px -20px rgba(60, 40, 10, 0.3); }
 .book-stage.single { overflow-x: clip; }
 .leaf-single { left: 0; width: 100%; transform-origin: right center; }
-.turning-prev-single { animation: turnPrevSingle 760ms cubic-bezier(0.45, 0.05, 0.25, 1) both; }
-@keyframes turnPrevSingle {
-  0% { transform: rotateY(180deg); }
-  100% { transform: rotateY(0deg); }
-}
+.leaf-single .leaf-face.front::after { background: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.25) 45%, rgba(0, 0, 0, 0.05)); }
+.book.single .stack-right { right: calc(-1 * (3px + 6px * var(--read))); width: calc(3px + 6px * var(--read)); }
 .paper-back { background: var(--paper); }
 @media (max-width: 600px) {
   .page-inner { padding: 18px 18px 14px; }
@@ -243,7 +286,8 @@
 .popstage { perspective: 900px; }
 .popup {
   transform-origin: 50% 100%;
-  animation: popUp 620ms cubic-bezier(0.2, 0.8, 0.25, 1.15) both;
+  /* `backwards` (not `both`) so the element returns to its own styles after popping up and can still react to hover */
+  animation: popUp 620ms cubic-bezier(0.2, 0.8, 0.25, 1.15) backwards;
 }
 @keyframes popUp {
   0% { opacity: 0; transform: perspective(800px) rotateX(-80deg) translateY(12px); }
@@ -269,3 +313,44 @@
   :root:not([data-theme='light']) .page { filter: brightness(0.94); }
 }
 :root[data-theme='dark'] .page { filter: brightness(0.94); }
+
+/* ---------------- depth for elements standing on the paper ---------------- */
+.page .lab-controls,
+.page .lab-results,
+.page .predict,
+.page .example-card,
+.page .compare,
+.page .assess-card,
+.paper-sheet .lab-controls,
+.paper-sheet .lab-results,
+.paper-sheet .predict {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 1px 2px rgba(60, 40, 10, 0.12),
+    0 6px 12px -2px rgba(60, 40, 10, 0.14),
+    0 18px 28px -14px rgba(60, 40, 10, 0.28);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+@media (hover: hover) {
+  .page .lab-controls:hover,
+  .page .lab-results:hover,
+  .page .example-card:hover,
+  .page .assess-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 2px 4px rgba(60, 40, 10, 0.12),
+      0 12px 20px -4px rgba(60, 40, 10, 0.18),
+      0 28px 40px -18px rgba(60, 40, 10, 0.32);
+  }
+}
+:root[data-motion='reduced'] .page *:hover { transform: none !important; }
+
+/* ---------------- short screens (landscape phones): let the header scroll away and fit the book to the viewport ---------------- */
+@media (max-height: 520px) {
+  .topbar { position: static; }
+  .book-block,
+  .book.single .book-block { height: calc(100dvh - 110px); min-height: 280px; }
+  .book-page { min-height: 0; padding-top: 6px; }
+  .book-hint { display: none; }
+}

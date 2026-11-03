@@ -51,15 +51,19 @@ export function QuizRunner({
   const [locked, setLocked] = useState<Set<string>>(new Set());
   const [flags, setFlags] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [left, setLeft] = useState(durationSec ?? 0);
   const start = useRef(Date.now());
   const finished = useRef(false);
+  // The timer callback must always grade the latest answers (not the ones captured at mount).
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   const submit = () => {
     if (finished.current) return;
     finished.current = true;
-    const g = grade(presented, answers);
+    const g = grade(presented, answersRef.current);
     const r: QuizResult = { ...g, usedSec: Math.round((Date.now() - start.current) / 1000) };
     setResult(r);
     setConfirm(false);
@@ -75,6 +79,18 @@ export function QuizRunner({
     }, 1000);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durationSec, result]);
+
+  // Warn before closing/reloading the tab during a timed exam with answers in progress.
+  useEffect(() => {
+    if (!durationSec || result) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      if (Object.keys(answersRef.current).length === 0) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, [durationSec, result]);
 
   if (!presented.length) return <p>لا توجد أسئلة.</p>;
@@ -140,6 +156,11 @@ export function QuizRunner({
             ⚑ {flags.has(q.id) ? 'معلّم للمراجعة' : 'علّم للمراجعة'}
           </button>
         </div>
+        {q.needsReview && (
+          <p className="review-flag" role="note">
+            ⚠ سؤال بانتظار مراجعة علمية: {q.needsReview}
+          </p>
+        )}
         <p id="qstem" className="qstem">{q.stem}</p>
         <div className="opts" role="radiogroup" aria-labelledby="qstem">
           {cur.order.map((orig, pos) => {
@@ -187,10 +208,29 @@ export function QuizRunner({
         <button type="button" className="btn btn-primary" onClick={() => (unanswered.length || flags.size ? setConfirm(true) : submit())}>
           إنهاء وتسليم
         </button>
-        <button type="button" className="btn btn-ghost" onClick={onExit}>
+        <button type="button" className="btn btn-ghost" onClick={() => (answeredCount > 0 ? setConfirmExit(true) : onExit())}>
           خروج
         </button>
       </footer>
+
+      {confirmExit && (
+        <Modal
+          title="الخروج من الاختبار"
+          onClose={() => setConfirmExit(false)}
+          actions={
+            <>
+              <button className="btn btn-primary" onClick={() => setConfirmExit(false)} autoFocus>
+                متابعة الاختبار
+              </button>
+              <button className="btn btn-danger" onClick={onExit}>
+                خروج دون حفظ
+              </button>
+            </>
+          }
+        >
+          <p>أجبت عن <bdi dir="ltr">{answeredCount}</bdi> سؤالًا. الخروج الآن لن يحفظ هذه المحاولة ولن تُحتسب في الإتقان أو سجل الأخطاء.</p>
+        </Modal>
+      )}
 
       {confirm && (
         <Modal

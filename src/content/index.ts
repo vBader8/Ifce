@@ -1,11 +1,16 @@
 import type { Chapter, Lesson, LessonStub, Question } from './types';
 import { CHAPTERS } from './chapters/structure';
 import { AUTHORED_LESSONS } from './chapters/authored';
-import { ALL_QUESTIONS } from './questions/all';
+import { ALL_QUESTIONS as RAW_QUESTIONS } from './questions/all';
+import { LESSON_REVIEW_NOTES, QUESTIONS_UNDER_REVIEW } from './reviewLog';
+
+const ALL_QUESTIONS = RAW_QUESTIONS.map((q) => (QUESTIONS_UNDER_REVIEW[q.id] ? { ...q, needsReview: QUESTIONS_UNDER_REVIEW[q.id] } : q));
 
 export { CHAPTERS };
 
-const lessonMap = new Map<string, Lesson>(AUTHORED_LESSONS.map((l) => [l.id, l]));
+const lessonMap = new Map<string, Lesson>(
+  AUTHORED_LESSONS.map((l) => [l.id, LESSON_REVIEW_NOTES[l.id] ? { ...l, reviewNotes: [...(l.reviewNotes ?? []), ...LESSON_REVIEW_NOTES[l.id]] } : l]),
+);
 
 /** Chapters with lesson stubs whose status reflects authored content. */
 export const chapters: Chapter[] = CHAPTERS.map((c) => ({
@@ -41,7 +46,7 @@ export const questionsFor = (lessonId: string, kind?: 'mcq' | 'scenario') =>
 export const questionById = new Map(ALL_QUESTIONS.map((q) => [q.id, q]));
 
 /** Exam pool: only questions from lessons whose status is `complete`. */
-export const examPool: Question[] = ALL_QUESTIONS.filter((q) => lessonMap.get(q.lessonId)?.status === 'complete');
+export const examPool: Question[] = ALL_QUESTIONS.filter((q) => lessonMap.get(q.lessonId)?.status === 'complete' && !q.needsReview);
 
 export { ALL_QUESTIONS };
 
@@ -81,7 +86,7 @@ export const searchIndex: SearchEntry[] = [
       haystack: normalizeAr(`${l.title} ${l.titleEn} ${l.outcomes.join(' ')}`),
     })),
   ),
-  ...AUTHORED_LESSONS.flatMap((l) =>
+  ...[...lessonMap.values()].flatMap((l) =>
     l.terms.map((t) => ({
       kind: 'term' as const,
       label: t.ar,

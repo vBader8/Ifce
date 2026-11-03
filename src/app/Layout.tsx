@@ -103,8 +103,8 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             </Link>
           ))}
         </nav>
+        {state.settings.teacherMode && <div className="teacher-ribbon" role="note">وضع العرض للمعلم مفعّل — جميع الدروس الجاهزة مفتوحة</div>}
       </header>
-      {state.settings.teacherMode && <div className="teacher-ribbon">وضع العرض للمعلم مفعّل — جميع الدروس الجاهزة مفتوحة</div>}
       <main id="main" tabIndex={-1}>
         {children}
       </main>

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Book3D, type Spread } from '../components/book/Book3D';
 import { AssessPage, ComparePage, ExamplesPage, ExplainPage, IntroPage, LabPage, MasteryGatePage, MistakesPage, SummaryPage, TermsPage } from '../components/book/LessonPages';
 import { chapters, getChapter, getLesson, getStub, LESSON_SECTIONS, readyLessonOrder } from '../content';
 import { useApp } from '../app/store';
 import { unlockedLessons } from '../engine/progress';
 import { Link, navigate } from '../app/router';
-import { StatusBadge, EmptyState } from '../components/ui';
+import { StatusBadge, EmptyState, useDialogFocus } from '../components/ui';
 
 export function BookPage({ lessonId, spread: spreadParam }: { lessonId?: string; spread?: number }) {
   const { state, dispatch } = useApp();
@@ -92,45 +92,55 @@ export function BookPage({ lessonId, spread: spreadParam }: { lessonId?: string;
 
   return (
     <div className={`book-page ${opening ? 'opening' : ''}`} style={{ ['--accent' as string]: chapter.accent }}>
+      <h1 className="sr-only">
+        الدرس {lesson.number}: {lesson.title}
+      </h1>
       <Book3D spreads={spreads} index={Math.min(index, spreads.length - 1)} onIndexChange={setIndex} sound={state.settings.sound} header={header} />
       <p className="book-hint muted small">تنقّل بالأسهم ← → أو اسحب الصفحة، أو استخدم الأزرار.</p>
-      {toc && (
-        <div className="drawer-backdrop" onClick={() => setToc(false)} role="presentation">
-          <nav className="drawer" role="dialog" aria-modal="true" aria-label="فهرس الكتاب" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === 'Escape' && setToc(false)}>
-            <div className="drawer-head">
-              <h2>الفهرس</h2>
-              <button type="button" className="btn btn-ghost btn-small" onClick={() => setToc(false)} autoFocus>
-                إغلاق
-              </button>
-            </div>
-            {chapters.map((c) => (
-              <div key={c.id} className="toc-ch">
-                <h3>الفصل {c.number}: {c.title}</h3>
-                <ul>
-                  {c.lessons.map((l) => {
-                    const locked = l.status === 'complete' && !unlocked.has(l.id);
-                    return (
-                      <li key={l.id} className={l.id === lesson.id ? 'current' : ''}>
-                        <button
-                          type="button"
-                          disabled={l.status === 'planned' || locked}
-                          onClick={() => {
-                            setToc(false);
-                            navigate(`/book/${l.id}`);
-                          }}
-                        >
-                          <span>{locked ? '🔒 ' : ''}{l.number} {l.title}</span>
-                          <StatusBadge status={l.status} />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </nav>
+      {toc && <TocDrawer currentId={lesson.id} unlocked={unlocked} onClose={() => setToc(false)} />}
+    </div>
+  );
+}
+
+function TocDrawer({ currentId, unlocked, onClose }: { currentId: string; unlocked: Set<string>; onClose: () => void }) {
+  const ref = useRef<HTMLElement>(null);
+  useDialogFocus(ref, onClose);
+  return (
+    <div className="drawer-backdrop" onClick={onClose} role="presentation">
+      <nav ref={ref} className="drawer" role="dialog" aria-modal="true" aria-label="فهرس الكتاب" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-head">
+          <h2>الفهرس</h2>
+          <button type="button" className="btn btn-ghost btn-small" onClick={onClose} autoFocus>
+            إغلاق
+          </button>
         </div>
-      )}
+        {chapters.map((c) => (
+          <div key={c.id} className="toc-ch">
+            <h3>الفصل {c.number}: {c.title}</h3>
+            <ul>
+              {c.lessons.map((l) => {
+                const locked = l.status === 'complete' && !unlocked.has(l.id);
+                return (
+                  <li key={l.id} className={l.id === currentId ? 'current' : ''}>
+                    <button
+                      type="button"
+                      disabled={l.status === 'planned' || locked}
+                      aria-current={l.id === currentId ? 'page' : undefined}
+                      onClick={() => {
+                        onClose();
+                        navigate(`/book/${l.id}`);
+                      }}
+                    >
+                      <span>{locked ? '🔒 ' : ''}{l.number} {l.title}</span>
+                      <StatusBadge status={l.status} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
     </div>
   );
 }

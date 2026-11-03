@@ -22,9 +22,9 @@ export function IntroPage({ lesson, chapter, firstInChapter }: { lesson: Lesson;
       <p className="kicker">
         الدرس <Ltr>{lesson.number}</Ltr> · <Ltr className="muted">{lesson.titleEn}</Ltr>
       </p>
-      <h1 className="lesson-title">{lesson.title}</h1>
+      <h2 className="lesson-title">{lesson.title}</h2>
       <StatusBadge status={lesson.status} />
-      {lesson.status === 'review' && lesson.reviewNotes && (
+      {lesson.reviewNotes && lesson.reviewNotes.length > 0 && (
         <div className="review-banner" role="note">
           <strong>تنبيه علمي:</strong> بعض نقاط هذا الدرس بانتظار مراجعة بشرية:
           <ul>{lesson.reviewNotes.map((n) => <li key={n}>{n}</li>)}</ul>
